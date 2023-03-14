@@ -26,6 +26,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:screenshot/screenshot.dart';
 
 import 'modules/colors_picker.dart';
+import 'package:collection/collection.dart';
 
 late Size viewportSize;
 double viewportRatio = 1;
@@ -39,6 +40,7 @@ String i18n(String sourceString) => _translations[sourceString.toLowerCase()] ??
 class ImageEditor extends StatelessWidget {
   final Uint8List? image;
   final List? images;
+  final Set<String>? recipients;
   final Function(List<ImageItem>)? onCompleteMulti;
   final Function(ImageItem)? onCompleteSingle;
   final Directory? savePath;
@@ -56,7 +58,8 @@ class ImageEditor extends StatelessWidget {
       this.maxLength = 99,
       Color? appBar,
       this.onCompleteMulti,
-      this.onCompleteSingle})
+      this.onCompleteSingle,
+      this.recipients})
       : super(key: key);
 
   @override
@@ -74,6 +77,7 @@ class ImageEditor extends StatelessWidget {
         allowMultiple: allowMultiple,
         maxLength: maxLength,
         onComplete: onCompleteMulti,
+        recipients: recipients,
       );
     } else {
       return SingleImageEditor(
@@ -82,6 +86,7 @@ class ImageEditor extends StatelessWidget {
         allowCamera: allowCamera,
         allowGallery: allowGallery,
         onComplete: onCompleteSingle,
+        recipients: recipients,
       );
     }
   }
@@ -124,6 +129,7 @@ class MultiImageEditor extends StatefulWidget {
   final int maxLength;
   final bool allowGallery, allowCamera, allowMultiple;
   final Function(List<ImageItem>)? onComplete;
+  final Set<String>? recipients;
 
   const MultiImageEditor({
     Key? key,
@@ -134,6 +140,7 @@ class MultiImageEditor extends StatefulWidget {
     this.allowMultiple = false,
     this.maxLength = 99,
     this.onComplete,
+    this.recipients,
   }) : super(key: key);
 
   @override
@@ -142,11 +149,13 @@ class MultiImageEditor extends StatefulWidget {
 
 class _MultiImageEditorState extends State<MultiImageEditor> {
   List<ImageItem> images = [];
+  late ImageItem selectedImage;
+  int selectedIndex = 0;
 
   @override
   void initState() {
     images = widget.images.map((e) => ImageItem(e)).toList();
-
+    selectedImage = images[selectedIndex];
     super.initState();
   }
 
@@ -155,7 +164,7 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
     viewportSize = MediaQuery.of(context).size;
 
     return Theme(
-      data: ImageEditor.theme,
+      data: Theme.of(context),
       child: Scaffold(
         appBar: AppBar(
           automaticallyImplyLeading: false,
@@ -165,7 +174,7 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
             if (images.length < widget.maxLength && widget.allowGallery)
               IconButton(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                icon: const Icon(Icons.photo),
+                icon: const Icon(Icons.add_photo_alternate_outlined),
                 onPressed: () async {
                   var selected = await picker.pickMultiImage();
 
@@ -175,7 +184,7 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
             if (images.length < widget.maxLength && widget.allowCamera)
               IconButton(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                icon: const Icon(Icons.camera_alt),
+                icon: const Icon(Icons.add_a_photo_outlined),
                 onPressed: () async {
                   var selected = await picker.pickImage(source: ImageSource.camera);
 
@@ -186,127 +195,176 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
               ),
             IconButton(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              icon: const Icon(Icons.check),
+              icon: const Icon(Icons.crop),
               onPressed: () async {
-                if (widget.onComplete != null) {
-                  widget.onComplete!(images);
-                } else {
-                  Navigator.pop(context, images);
+                Uint8List? editedImage = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ImageCropper(
+                      image: images[selectedIndex].image,
+                    ),
+                  ),
+                );
+
+                if (editedImage != null) {
+                  images[selectedIndex].load(editedImage);
+                  setState(() {});
+                }
+              },
+            ),
+            IconButton(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              icon: const Icon(Icons.photo_filter_outlined),
+              onPressed: () async {
+                Uint8List? editedImage = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ImageFilters(
+                      image: images[selectedIndex].image,
+                    ),
+                  ),
+                );
+
+                if (editedImage != null) {
+                  images[selectedIndex].load(editedImage);
+                  setState(() {});
+                }
+              },
+            ),
+            IconButton(
+              padding: const EdgeInsets.symmetric(horizontal: 8),
+              icon: const Icon(Icons.edit_outlined),
+              onPressed: () async {
+                var img = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SingleImageEditor(
+                      image: images[selectedIndex],
+                    ),
+                  ),
+                );
+                if (img != null) {
+                  images[selectedIndex].load(img);
+                  setState(() {});
                 }
               },
             ),
           ],
         ),
-        body: Column(
-          mainAxisAlignment: MainAxisAlignment.end,
-          children: [
-            SizedBox(
-              height: 332,
-              width: double.infinity,
-              child: SingleChildScrollView(
-                scrollDirection: Axis.horizontal,
-                child: Row(
-                  children: [
-                    const SizedBox(width: 32),
-                    for (var image in images)
-                      Stack(children: [
-                        GestureDetector(
-                          onTap: () async {
-                            var img = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => SingleImageEditor(
-                                  image: image,
-                                ),
-                              ),
-                            );
-
-                            if (img != null) {
-                              image.load(img);
-                              setState(() {});
-                            }
-                          },
-                          child: Container(
-                            margin: const EdgeInsets.only(top: 32, right: 32, bottom: 32),
-                            width: 200,
-                            height: 300,
-                            decoration: BoxDecoration(
-                              color: Colors.transparent,
-                              border: Border.all(color: Colors.white.withAlpha(80)),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(4),
-                              child: Image.memory(
-                                image.image,
-                                fit: BoxFit.cover,
-                              ),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          top: 36,
-                          right: 36,
-                          child: Container(
-                            height: 32,
-                            width: 32,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withAlpha(60),
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                            child: IconButton(
-                              iconSize: 20,
-                              padding: const EdgeInsets.all(0),
-                              onPressed: () {
-                                // print('removing');
-                                images.remove(image);
-                                setState(() {});
-                              },
-                              icon: const Icon(Icons.clear_outlined),
-                            ),
-                          ),
-                        ),
-                        Positioned(
-                          bottom: 32,
-                          left: 0,
-                          child: Container(
-                            height: 38,
-                            width: 38,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: Colors.black.withAlpha(100),
-                              borderRadius: const BorderRadius.only(
-                                topRight: Radius.circular(19),
-                              ),
-                            ),
-                            child: IconButton(
-                              iconSize: 20,
-                              padding: const EdgeInsets.all(0),
-                              onPressed: () async {
-                                Uint8List? editedImage = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => ImageFilters(
-                                      image: image.image,
-                                    ),
-                                  ),
-                                );
-
-                                if (editedImage != null) {
-                                  image.load(editedImage);
-                                }
-                              },
-                              icon: const Icon(Icons.photo_filter_sharp),
-                            ),
-                          ),
-                        ),
-                      ]),
-                  ],
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxWidth: MediaQuery.of(context).size.width,
+                  maxHeight: MediaQuery.of(context).size.height / 2,
+                ),
+                child: Image.memory(
+                  images[selectedIndex].image,
+                  fit: BoxFit.contain,
                 ),
               ),
-            ),
-          ],
+              SizedBox(
+                height: 232,
+                width: double.infinity,
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 32),
+                      ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          shrinkWrap: true,
+                          itemExtent: 132,
+                          itemCount: images.length,
+                          itemBuilder: (context, index) {
+                            return Stack(children: [
+                              GestureDetector(
+                                onTap: () async {
+                                  setState(() {
+                                    selectedIndex = index;
+                                  });
+                                },
+                                child: Container(
+                                  margin: const EdgeInsets.only(top: 32, right: 32, bottom: 32),
+                                  width: 100,
+                                  height: 150,
+                                  decoration: BoxDecoration(
+                                    border: Border.all(
+                                      width: (selectedIndex == index) ? 4 : 0,
+                                      color:
+                                          (selectedIndex == index) ? Theme.of(context).colorScheme.primaryContainer : Colors.white.withAlpha(80),
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: ClipRRect(
+                                    borderRadius: BorderRadius.circular(4),
+                                    child: Image.memory(
+                                      images[index].image,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              Positioned(
+                                top: 36,
+                                right: 36,
+                                child: Container(
+                                  height: 32,
+                                  width: 32,
+                                  alignment: Alignment.center,
+                                  decoration: BoxDecoration(
+                                    color: Colors.black.withAlpha(60),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: IconButton(
+                                    iconSize: 20,
+                                    padding: const EdgeInsets.all(0),
+                                    onPressed: () {
+                                      // print('removing');
+                                      images.remove(images[index]);
+                                      setState(() {});
+                                    },
+                                    icon: const Icon(Icons.clear_outlined),
+                                  ),
+                                ),
+                              ),
+                            ]);
+                          })
+                    ],
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  if (widget.recipients != null && widget.recipients!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                      child: Text(widget.recipients!.join(",  ")),
+                    ),
+                  const Spacer(),
+                  Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: FloatingActionButton.small(
+                      onPressed: () async {
+                        if (widget.onComplete != null) {
+                          await widget.onComplete!(images);
+                        } else {
+                          Navigator.pop(context, images);
+                        }
+                      },
+                      backgroundColor: Theme.of(context).colorScheme.primary,
+                      child: Icon(
+                        Icons.check,
+                        color: Theme.of(context).colorScheme.onPrimary,
+                      ),
+                    ),
+                  )
+                ],
+              )
+            ],
+          ),
         ),
       ),
     );
@@ -322,6 +380,7 @@ class SingleImageEditor extends StatefulWidget {
   final List? imageList;
   final bool allowCamera, allowGallery;
   final Function(ImageItem)? onComplete;
+  final Set<String>? recipients;
 
   const SingleImageEditor({
     Key? key,
@@ -331,6 +390,7 @@ class SingleImageEditor extends StatefulWidget {
     this.allowCamera = false,
     this.allowGallery = false,
     this.onComplete,
+    this.recipients,
   }) : super(key: key);
 
   @override
