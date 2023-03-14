@@ -198,6 +198,7 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
           ],
         ),
         body: Column(
+          mainAxisAlignment: MainAxisAlignment.end,
           children: [
             SizedBox(
               height: 332,
