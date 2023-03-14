@@ -33,14 +33,14 @@ double viewportRatio = 1;
 List<Layer> layers = [], undoLayers = [], removedLayers = [];
 Map<String, String> _translations = {};
 
-String i18n(String sourceString) =>
-    _translations[sourceString.toLowerCase()] ?? sourceString;
+String i18n(String sourceString) => _translations[sourceString.toLowerCase()] ?? sourceString;
 
 /// Single endpoint for MultiImageEditor & SingleImageEditor
 class ImageEditor extends StatelessWidget {
   final Uint8List? image;
   final List? images;
-
+  final Function(List<ImageItem>)? onCompleteMulti;
+  final Function(ImageItem)? onCompleteSingle;
   final Directory? savePath;
   final int maxLength;
   final bool allowGallery, allowCamera, allowMultiple;
@@ -54,14 +54,15 @@ class ImageEditor extends StatelessWidget {
       this.allowGallery = false,
       this.allowMultiple = false,
       this.maxLength = 99,
-      Color? appBar})
+      Color? appBar,
+      this.onCompleteMulti,
+      this.onCompleteSingle})
       : super(key: key);
 
   @override
   Widget build(BuildContext context) {
     if (images != null && image == null && !allowCamera && !allowGallery) {
-      throw Exception(
-          'No image to work with, provide an image or allow the image picker.');
+      throw Exception('No image to work with, provide an image or allow the image picker.');
     }
 
     if ((image == null || images != null) && allowMultiple == true) {
@@ -72,6 +73,7 @@ class ImageEditor extends StatelessWidget {
         allowGallery: allowGallery,
         allowMultiple: allowMultiple,
         maxLength: maxLength,
+        onComplete: onCompleteMulti,
       );
     } else {
       return SingleImageEditor(
@@ -79,6 +81,7 @@ class ImageEditor extends StatelessWidget {
         savePath: savePath,
         allowCamera: allowCamera,
         allowGallery: allowGallery,
+        onComplete: onCompleteSingle,
       );
     }
   }
@@ -120,6 +123,7 @@ class MultiImageEditor extends StatefulWidget {
   final List images;
   final int maxLength;
   final bool allowGallery, allowCamera, allowMultiple;
+  final Function(List<ImageItem>)? onComplete;
 
   const MultiImageEditor({
     Key? key,
@@ -129,6 +133,7 @@ class MultiImageEditor extends StatefulWidget {
     this.allowGallery = false,
     this.allowMultiple = false,
     this.maxLength = 99,
+    this.onComplete,
   }) : super(key: key);
 
   @override
@@ -172,8 +177,7 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 icon: const Icon(Icons.camera_alt),
                 onPressed: () async {
-                  var selected =
-                      await picker.pickImage(source: ImageSource.camera);
+                  var selected = await picker.pickImage(source: ImageSource.camera);
 
                   if (selected == null) return;
 
@@ -184,7 +188,11 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               icon: const Icon(Icons.check),
               onPressed: () async {
-                Navigator.pop(context, images);
+                if (widget.onComplete != null) {
+                  widget.onComplete!(images);
+                } else {
+                  Navigator.pop(context, images);
+                }
               },
             ),
           ],
@@ -218,14 +226,12 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
                             }
                           },
                           child: Container(
-                            margin: const EdgeInsets.only(
-                                top: 32, right: 32, bottom: 32),
+                            margin: const EdgeInsets.only(top: 32, right: 32, bottom: 32),
                             width: 200,
                             height: 300,
                             decoration: BoxDecoration(
                               color: Colors.transparent,
-                              border:
-                                  Border.all(color: Colors.white.withAlpha(80)),
+                              border: Border.all(color: Colors.white.withAlpha(80)),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: ClipRRect(
@@ -314,6 +320,7 @@ class SingleImageEditor extends StatefulWidget {
   final dynamic image;
   final List? imageList;
   final bool allowCamera, allowGallery;
+  final Function(ImageItem)? onComplete;
 
   const SingleImageEditor({
     Key? key,
@@ -322,6 +329,7 @@ class SingleImageEditor extends StatefulWidget {
     this.imageList,
     this.allowCamera = false,
     this.allowGallery = false,
+    this.onComplete,
   }) : super(key: key);
 
   @override
@@ -351,10 +359,7 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
       const Spacer(),
       IconButton(
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        icon: Icon(Icons.undo,
-            color: layers.length > 1 || removedLayers.isNotEmpty
-                ? Colors.white
-                : Colors.grey),
+        icon: Icon(Icons.undo, color: layers.length > 1 || removedLayers.isNotEmpty ? Colors.white : Colors.grey),
         onPressed: () {
           if (removedLayers.isNotEmpty) {
             layers.add(removedLayers.removeLast());
@@ -371,8 +376,7 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
       ),
       IconButton(
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        icon: Icon(Icons.redo,
-            color: undoLayers.isNotEmpty ? Colors.white : Colors.grey),
+        icon: Icon(Icons.redo, color: undoLayers.isNotEmpty ? Colors.white : Colors.grey),
         onPressed: () {
           if (undoLayers.isEmpty) return;
 
@@ -411,10 +415,14 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
         onPressed: () async {
           resetTransformation();
 
-          var binaryIntList =
-              await screenshotController.capture(pixelRatio: pixelRatio);
+          var binaryIntList = await screenshotController.capture(pixelRatio: pixelRatio);
 
-          Navigator.pop(context, binaryIntList);
+          if (widget.onComplete != null) {
+            ImageItem image = ImageItem(binaryIntList);
+            widget.onComplete!(image);
+          } else {
+            Navigator.pop(context, binaryIntList);
+          }
         },
       ),
     ];
@@ -540,8 +548,7 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
             if (details.pointerCount == 2) {
               // print([details.horizontalScale, details.verticalScale]);
               if (details.horizontalScale != 1) {
-                scaleFactor = lastScaleFactor *
-                    math.min(details.horizontalScale, details.verticalScale);
+                scaleFactor = lastScaleFactor * math.min(details.horizontalScale, details.verticalScale);
                 setState(() {});
               }
             }
@@ -724,9 +731,7 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
 
                     showModalBottomSheet(
                       shape: const RoundedRectangleBorder(
-                        borderRadius: BorderRadius.only(
-                            topRight: Radius.circular(10),
-                            topLeft: Radius.circular(10)),
+                        borderRadius: BorderRadius.only(topRight: Radius.circular(10), topLeft: Radius.circular(10)),
                       ),
                       context: context,
                       builder: (context) {
@@ -736,9 +741,7 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
                               child: Container(
                                 decoration: const BoxDecoration(
                                   color: Colors.black87,
-                                  borderRadius: BorderRadius.only(
-                                      topRight: Radius.circular(10),
-                                      topLeft: Radius.circular(10)),
+                                  borderRadius: BorderRadius.only(topRight: Radius.circular(10), topLeft: Radius.circular(10)),
                                 ),
                                 padding: const EdgeInsets.all(20),
                                 height: 400,
@@ -747,15 +750,13 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
                                     Center(
                                         child: Text(
                                       i18n('Slider Filter Color').toUpperCase(),
-                                      style:
-                                          const TextStyle(color: Colors.white),
+                                      style: const TextStyle(color: Colors.white),
                                     )),
                                     const Divider(),
                                     const SizedBox(height: 20.0),
                                     Text(
                                       i18n('Slider Color'),
-                                      style:
-                                          const TextStyle(color: Colors.white),
+                                      style: const TextStyle(color: Colors.white),
                                     ),
                                     const SizedBox(height: 10),
                                     Row(children: [
@@ -781,8 +782,7 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
                                         onPressed: () {
                                           setState(() {
                                             setS(() {
-                                              blurLayer.color =
-                                                  Colors.transparent;
+                                              blurLayer.color = Colors.transparent;
                                             });
                                           });
                                         },
@@ -791,8 +791,7 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
                                     const SizedBox(height: 5.0),
                                     Text(
                                       i18n('Blur Radius'),
-                                      style:
-                                          const TextStyle(color: Colors.white),
+                                      style: const TextStyle(color: Colors.white),
                                     ),
                                     const SizedBox(height: 10.0),
                                     Row(children: [
@@ -828,8 +827,7 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
                                     const SizedBox(height: 5.0),
                                     Text(
                                       i18n('Color Opacity'),
-                                      style:
-                                          const TextStyle(color: Colors.white),
+                                      style: const TextStyle(color: Colors.white),
                                     ),
                                     const SizedBox(height: 10.0),
                                     Row(children: [
@@ -1020,8 +1018,7 @@ class ImageCropper extends StatefulWidget {
 }
 
 class _ImageCropperState extends State<ImageCropper> {
-  final GlobalKey<ExtendedImageEditorState> _controller =
-      GlobalKey<ExtendedImageEditorState>();
+  final GlobalKey<ExtendedImageEditorState> _controller = GlobalKey<ExtendedImageEditorState>();
 
   double? aspectRatio;
   double? aspectRatioOriginal;
@@ -1198,8 +1195,7 @@ class _ImageCropperState extends State<ImageCropper> {
     );
   }
 
-  Future<Uint8List?> cropImageDataWithNativeLibrary(
-      {required ExtendedImageEditorState state}) async {
+  Future<Uint8List?> cropImageDataWithNativeLibrary({required ExtendedImageEditorState state}) async {
     final Rect? cropRect = state.getCropRect();
     final EditActionDetails action = state.editAction!;
 
@@ -1208,16 +1204,14 @@ class _ImageCropperState extends State<ImageCropper> {
     final bool flipVertical = action.flipX;
     final Uint8List img = state.rawImageData;
 
-    final image_editor.ImageEditorOption option =
-        image_editor.ImageEditorOption();
+    final image_editor.ImageEditorOption option = image_editor.ImageEditorOption();
 
     if (action.needCrop) {
       option.addOption(image_editor.ClipOption.fromRect(cropRect!));
     }
 
     if (action.needFlip) {
-      option.addOption(image_editor.FlipOption(
-          horizontal: flipHorizontal, vertical: flipVertical));
+      option.addOption(image_editor.FlipOption(horizontal: flipHorizontal, vertical: flipVertical));
     }
 
     if (action.hasRotateAngle) {
@@ -1432,8 +1426,7 @@ class FilterAppliedImage extends StatelessWidget {
         return;
       }
 
-      final image_editor.ImageEditorOption option =
-          image_editor.ImageEditorOption();
+      final image_editor.ImageEditorOption option = image_editor.ImageEditorOption();
 
       option.addOption(image_editor.ColorOption(matrix: filter.matrix));
 
@@ -1547,9 +1540,7 @@ class _ImageEditorDrawingState extends State<ImageEditorDrawing> {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               icon: Icon(
                 Icons.undo,
-                color: control.paths.isNotEmpty
-                    ? Colors.white
-                    : Colors.white.withAlpha(80),
+                color: control.paths.isNotEmpty ? Colors.white : Colors.white.withAlpha(80),
               ),
               onPressed: () {
                 if (control.paths.isEmpty) return;
@@ -1563,9 +1554,7 @@ class _ImageEditorDrawingState extends State<ImageEditorDrawing> {
               padding: const EdgeInsets.symmetric(horizontal: 8),
               icon: Icon(
                 Icons.redo,
-                color: undoList.isNotEmpty
-                    ? Colors.white
-                    : Colors.white.withAlpha(80),
+                color: undoList.isNotEmpty ? Colors.white : Colors.white.withAlpha(80),
               ),
               onPressed: () {
                 if (undoList.isEmpty) return;
