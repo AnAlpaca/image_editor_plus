@@ -43,6 +43,7 @@ class ImageEditor extends StatelessWidget {
   final Set<String>? recipients;
   final Function(List<ImageItem>)? onCompleteMulti;
   final Function(ImageItem)? onCompleteSingle;
+  final VoidCallback? onCancel;
   final Directory? savePath;
   final int maxLength;
   final bool allowGallery, allowCamera, allowMultiple;
@@ -59,6 +60,7 @@ class ImageEditor extends StatelessWidget {
       Color? appBar,
       this.onCompleteMulti,
       this.onCompleteSingle,
+      this.onCancel,
       this.recipients})
       : super(key: key);
 
@@ -77,6 +79,7 @@ class ImageEditor extends StatelessWidget {
         allowMultiple: allowMultiple,
         maxLength: maxLength,
         onComplete: onCompleteMulti,
+        onCancel: onCancel,
         recipients: recipients,
       );
     } else {
@@ -86,6 +89,7 @@ class ImageEditor extends StatelessWidget {
         allowCamera: allowCamera,
         allowGallery: allowGallery,
         onComplete: onCompleteSingle,
+        onCancel: onCancel,
         recipients: recipients,
       );
     }
@@ -129,6 +133,7 @@ class MultiImageEditor extends StatefulWidget {
   final int maxLength;
   final bool allowGallery, allowCamera, allowMultiple;
   final Function(List<ImageItem>)? onComplete;
+  final VoidCallback? onCancel;
   final Set<String>? recipients;
 
   const MultiImageEditor({
@@ -141,6 +146,7 @@ class MultiImageEditor extends StatefulWidget {
     this.maxLength = 99,
     this.onComplete,
     this.recipients,
+    this.onCancel,
   }) : super(key: key);
 
   @override
@@ -169,7 +175,7 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
         appBar: AppBar(
           automaticallyImplyLeading: false,
           actions: [
-            const BackButton(),
+            BackButton(onPressed: (widget.onCancel != null) ? () => widget.onCancel!() : () {}),
             const Spacer(),
             if (images.length < widget.maxLength && widget.allowGallery)
               IconButton(
@@ -293,8 +299,7 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
                                   decoration: BoxDecoration(
                                     border: Border.all(
                                       width: (selectedIndex == index) ? 4 : 0,
-                                      color:
-                                          (selectedIndex == index) ? Theme.of(context).colorScheme.primaryContainer : Colors.white.withAlpha(80),
+                                      color: (selectedIndex == index) ? Theme.of(context).colorScheme.primaryContainer : Colors.white.withAlpha(80),
                                     ),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
@@ -380,6 +385,7 @@ class SingleImageEditor extends StatefulWidget {
   final List? imageList;
   final bool allowCamera, allowGallery;
   final Function(ImageItem)? onComplete;
+  final VoidCallback? onCancel;
   final Set<String>? recipients;
 
   const SingleImageEditor({
@@ -391,6 +397,7 @@ class SingleImageEditor extends StatefulWidget {
     this.allowGallery = false,
     this.onComplete,
     this.recipients,
+    this.onCancel,
   }) : super(key: key);
 
   @override
@@ -416,7 +423,12 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
 
   List<Widget> get filterActions {
     return [
-      const BackButton(),
+      BackButton(
+          onPressed: (widget.onCancel != null)
+              ? () => widget.onCancel!()
+              : () {
+                  Navigator.maybePop(context);
+                }),
       const Spacer(),
       IconButton(
         padding: const EdgeInsets.symmetric(horizontal: 8),
