@@ -487,12 +487,10 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
         icon: const Icon(Icons.check),
         onPressed: () async {
           resetTransformation();
-
           var binaryIntList = await screenshotController.capture(pixelRatio: pixelRatio);
-
           if (widget.onComplete != null) {
             ImageItem image = ImageItem(binaryIntList);
-            widget.onComplete!(image);
+            await widget.onComplete!(image);
           } else {
             Navigator.pop(context, binaryIntList);
           }
