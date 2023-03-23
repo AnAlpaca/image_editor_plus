@@ -172,206 +172,207 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
     return Theme(
       data: Theme.of(context),
       child: Scaffold(
-        appBar: AppBar(
-          automaticallyImplyLeading: false,
-          actions: [
-            BackButton(onPressed: (widget.onCancel != null) ? () => widget.onCancel!() : () {}),
-            const Spacer(),
-            if (images.length < widget.maxLength && widget.allowGallery)
+          appBar: AppBar(
+            automaticallyImplyLeading: false,
+            actions: [
+              BackButton(onPressed: (widget.onCancel != null) ? () => widget.onCancel!() : () {}),
+              const Spacer(),
+              if (images.length < widget.maxLength && widget.allowGallery)
+                IconButton(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  icon: const Icon(Icons.add_photo_alternate_outlined),
+                  onPressed: () async {
+                    var selected = await picker.pickMultiImage();
+
+                    images.addAll(selected.map((e) => ImageItem(e)).toList());
+                  },
+                ),
+              if (images.length < widget.maxLength && widget.allowCamera)
+                IconButton(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  icon: const Icon(Icons.add_a_photo_outlined),
+                  onPressed: () async {
+                    var selected = await picker.pickImage(source: ImageSource.camera);
+
+                    if (selected == null) return;
+
+                    images.add(ImageItem(selected));
+                  },
+                ),
               IconButton(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
-                icon: const Icon(Icons.add_photo_alternate_outlined),
+                icon: const Icon(Icons.crop),
                 onPressed: () async {
-                  var selected = await picker.pickMultiImage();
-
-                  images.addAll(selected.map((e) => ImageItem(e)).toList());
-                },
-              ),
-            if (images.length < widget.maxLength && widget.allowCamera)
-              IconButton(
-                padding: const EdgeInsets.symmetric(horizontal: 8),
-                icon: const Icon(Icons.add_a_photo_outlined),
-                onPressed: () async {
-                  var selected = await picker.pickImage(source: ImageSource.camera);
-
-                  if (selected == null) return;
-
-                  images.add(ImageItem(selected));
-                },
-              ),
-            IconButton(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              icon: const Icon(Icons.crop),
-              onPressed: () async {
-                Uint8List? editedImage = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ImageCropper(
-                      image: images[selectedIndex].image,
-                    ),
-                  ),
-                );
-
-                if (editedImage != null) {
-                  images[selectedIndex].load(editedImage);
-                  setState(() {});
-                }
-              },
-            ),
-            IconButton(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              icon: const Icon(Icons.photo_filter_outlined),
-              onPressed: () async {
-                Uint8List? editedImage = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => ImageFilters(
-                      image: images[selectedIndex].image,
-                    ),
-                  ),
-                );
-
-                if (editedImage != null) {
-                  images[selectedIndex].load(editedImage);
-                  setState(() {});
-                }
-              },
-            ),
-            IconButton(
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-              icon: const Icon(Icons.edit_outlined),
-              onPressed: () async {
-                var img = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SingleImageEditor(
-                      image: images[selectedIndex],
-                    ),
-                  ),
-                );
-                if (img != null) {
-                  images[selectedIndex].load(img);
-                  setState(() {});
-                }
-              },
-            ),
-          ],
-        ),
-        body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.end,
-            children: [
-              ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxWidth: MediaQuery.of(context).size.width,
-                  maxHeight: MediaQuery.of(context).size.height / 2,
-                ),
-                child: Image.memory(
-                  images[selectedIndex].image,
-                  fit: BoxFit.contain,
-                ),
-              ),
-              SizedBox(
-                height: 232,
-                width: double.infinity,
-                child: SingleChildScrollView(
-                  scrollDirection: Axis.horizontal,
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 32),
-                      ListView.builder(
-                          scrollDirection: Axis.horizontal,
-                          shrinkWrap: true,
-                          itemExtent: 132,
-                          itemCount: images.length,
-                          itemBuilder: (context, index) {
-                            return Stack(children: [
-                              GestureDetector(
-                                onTap: () async {
-                                  setState(() {
-                                    selectedIndex = index;
-                                  });
-                                },
-                                child: Container(
-                                  margin: const EdgeInsets.only(top: 32, right: 32, bottom: 32),
-                                  width: 100,
-                                  height: 150,
-                                  decoration: BoxDecoration(
-                                    border: Border.all(
-                                      width: (selectedIndex == index) ? 4 : 0,
-                                      color: (selectedIndex == index) ? Theme.of(context).colorScheme.primaryContainer : Colors.white.withAlpha(80),
-                                    ),
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  child: ClipRRect(
-                                    borderRadius: BorderRadius.circular(4),
-                                    child: Image.memory(
-                                      images[index].image,
-                                      fit: BoxFit.cover,
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              Positioned(
-                                top: 36,
-                                right: 36,
-                                child: Container(
-                                  height: 32,
-                                  width: 32,
-                                  alignment: Alignment.center,
-                                  decoration: BoxDecoration(
-                                    color: Colors.black.withAlpha(60),
-                                    borderRadius: BorderRadius.circular(16),
-                                  ),
-                                  child: IconButton(
-                                    iconSize: 20,
-                                    padding: const EdgeInsets.all(0),
-                                    onPressed: () {
-                                      // print('removing');
-                                      images.remove(images[index]);
-                                      setState(() {});
-                                    },
-                                    icon: const Icon(Icons.clear_outlined),
-                                  ),
-                                ),
-                              ),
-                            ]);
-                          })
-                    ],
-                  ),
-                ),
-              ),
-              Row(
-                children: [
-                  if (widget.recipients != null && widget.recipients!.isNotEmpty)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 8.0),
-                      child: Text(widget.recipients!.join(",  ")),
-                    ),
-                  const Spacer(),
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: FloatingActionButton.small(
-                      onPressed: () async {
-                        if (widget.onComplete != null) {
-                          await widget.onComplete!(images);
-                        } else {
-                          Navigator.pop(context, images);
-                        }
-                      },
-                      backgroundColor: Theme.of(context).colorScheme.primary,
-                      child: Icon(
-                        Icons.check,
-                        color: Theme.of(context).colorScheme.onPrimary,
+                  Uint8List? editedImage = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ImageCropper(
+                        image: images[selectedIndex].image,
                       ),
                     ),
-                  )
-                ],
-              )
+                  );
+
+                  if (editedImage != null) {
+                    images[selectedIndex].load(editedImage);
+                    setState(() {});
+                  }
+                },
+              ),
+              IconButton(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                icon: const Icon(Icons.photo_filter_outlined),
+                onPressed: () async {
+                  Uint8List? editedImage = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => ImageFilters(
+                        image: images[selectedIndex].image,
+                      ),
+                    ),
+                  );
+
+                  if (editedImage != null) {
+                    images[selectedIndex].load(editedImage);
+                    setState(() {});
+                  }
+                },
+              ),
+              IconButton(
+                padding: const EdgeInsets.symmetric(horizontal: 8),
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: () async {
+                  var img = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SingleImageEditor(
+                        image: images[selectedIndex],
+                      ),
+                    ),
+                  );
+                  if (img != null) {
+                    images[selectedIndex].load(img);
+                    setState(() {});
+                  }
+                },
+              ),
             ],
           ),
-        ),
-      ),
+          body: Center(
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width,
+                      maxHeight: MediaQuery.of(context).size.height / 2,
+                    ),
+                    child: Image.memory(
+                      images[selectedIndex].image,
+                      fit: BoxFit.contain,
+                    ),
+                  ),
+                  SizedBox(
+                    height: 232,
+                    width: double.infinity,
+                    child: SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 32),
+                          ListView.builder(
+                              scrollDirection: Axis.horizontal,
+                              shrinkWrap: true,
+                              itemExtent: 132,
+                              itemCount: images.length,
+                              itemBuilder: (context, index) {
+                                return Stack(children: [
+                                  GestureDetector(
+                                    onTap: () async {
+                                      setState(() {
+                                        selectedIndex = index;
+                                      });
+                                    },
+                                    child: Container(
+                                      margin: const EdgeInsets.only(top: 32, right: 32, bottom: 32),
+                                      width: 100,
+                                      height: 150,
+                                      decoration: BoxDecoration(
+                                        border: Border.all(
+                                          width: (selectedIndex == index) ? 4 : 0,
+                                          color: (selectedIndex == index) ? Theme.of(context).colorScheme.primaryContainer : Colors.white.withAlpha(80),
+                                        ),
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                      child: ClipRRect(
+                                        borderRadius: BorderRadius.circular(4),
+                                        child: Image.memory(
+                                          images[index].image,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    top: 36,
+                                    right: 36,
+                                    child: Container(
+                                      height: 32,
+                                      width: 32,
+                                      alignment: Alignment.center,
+                                      decoration: BoxDecoration(
+                                        color: Colors.black.withAlpha(60),
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: IconButton(
+                                        iconSize: 20,
+                                        padding: const EdgeInsets.all(0),
+                                        onPressed: () {
+                                          // print('removing');
+                                          images.remove(images[index]);
+                                          setState(() {});
+                                        },
+                                        icon: const Icon(Icons.clear_outlined),
+                                      ),
+                                    ),
+                                  ),
+                                ]);
+                              })
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          bottomNavigationBar: Row(
+            children: [
+              if (widget.recipients != null && widget.recipients!.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                  child: Text(widget.recipients!.join(",  ")),
+                ),
+              const Spacer(),
+              Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: FloatingActionButton.small(
+                  onPressed: () async {
+                    if (widget.onComplete != null) {
+                      await widget.onComplete!(images);
+                    } else {
+                      Navigator.pop(context, images);
+                    }
+                  },
+                  backgroundColor: Theme.of(context).colorScheme.primary,
+                  child: Icon(
+                    Icons.check,
+                    color: Theme.of(context).colorScheme.onPrimary,
+                  ),
+                ),
+              )
+            ],
+          )),
     );
   }
 
