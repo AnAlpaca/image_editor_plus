@@ -378,7 +378,11 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
                       : () {},
                   backgroundColor: Theme.of(context).colorScheme.primary,
                   child: isLoading
-                      ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator())
+                      ? SizedBox.square(
+                          dimension: 20,
+                          child: CircularProgressIndicator(
+                            color: Theme.of(context).colorScheme.onPrimary,
+                          ))
                       : Icon(
                           Icons.check,
                           color: Theme.of(context).colorScheme.onPrimary,
@@ -429,6 +433,8 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
   final GlobalKey container = GlobalKey();
   final GlobalKey globalKey = GlobalKey();
   ScreenshotController screenshotController = ScreenshotController();
+
+  bool isLoading = false;
 
   @override
   void dispose() {
@@ -499,17 +505,38 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
         ),
       IconButton(
         padding: const EdgeInsets.symmetric(horizontal: 8),
-        icon: const Icon(Icons.check),
-        onPressed: () async {
-          resetTransformation();
-          var binaryIntList = await screenshotController.capture(pixelRatio: pixelRatio);
-          if (widget.onComplete != null) {
-            ImageItem image = ImageItem(binaryIntList);
-            await widget.onComplete!(image);
-          } else {
-            Navigator.pop(context, binaryIntList);
-          }
-        },
+        icon: isLoading
+            ? SizedBox.square(
+                dimension: 20,
+                child: CircularProgressIndicator(
+                  color: Theme.of(context).colorScheme.onPrimary,
+                ))
+            : Icon(
+                Icons.check,
+                color: Theme.of(context).colorScheme.onPrimary,
+              ),
+        onPressed: isLoading
+            ? () {}
+            : () async {
+                resetTransformation();
+                var binaryIntList = await screenshotController.capture(pixelRatio: pixelRatio);
+                if (widget.onComplete != null) {
+                  ImageItem image = ImageItem(binaryIntList);
+                  setState(() {
+                    isLoading = true;
+                  });
+                  await widget.onComplete!(image);
+                  setState(() {
+                    isLoading = false;
+                  });
+                } else {
+                  setState(() {
+                    isLoading = true;
+                  });
+                  if (!mounted) return;
+                  Navigator.pop(context, binaryIntList);
+                }
+              },
       ),
     ];
   }
