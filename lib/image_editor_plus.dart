@@ -364,7 +364,7 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
                             isLoading = true;
                           });
                           if (widget.onComplete != null) {
-                            await widget.onComplete!(images);
+                            isLoading ? null : await widget.onComplete!(images);
                             setState(() {
                               isLoading = false;
                             });
@@ -506,14 +506,12 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
       IconButton(
         padding: const EdgeInsets.symmetric(horizontal: 8),
         icon: isLoading
-            ? SizedBox.square(
+            ? const SizedBox.square(
                 dimension: 20,
                 child: CircularProgressIndicator(
-                  color: Theme.of(context).colorScheme.onPrimary,
                 ))
-            : Icon(
-                Icons.check,
-                color: Theme.of(context).colorScheme.onPrimary,
+            : const Icon(
+                Icons.check
               ),
         onPressed: isLoading
             ? () {}
@@ -525,7 +523,7 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
                   setState(() {
                     isLoading = true;
                   });
-                  await widget.onComplete!(image);
+                  isLoading ? null : await widget.onComplete!(image);
                   setState(() {
                     isLoading = false;
                   });
