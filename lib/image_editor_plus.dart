@@ -157,6 +157,7 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
   List<ImageItem> images = [];
   late ImageItem selectedImage;
   int selectedIndex = 0;
+  bool isLoading = false;
 
   @override
   void initState() {
@@ -357,18 +358,31 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
               Padding(
                 padding: const EdgeInsets.all(8.0),
                 child: FloatingActionButton.small(
-                  onPressed: () async {
-                    if (widget.onComplete != null) {
-                      await widget.onComplete!(images);
-                    } else {
-                      Navigator.pop(context, images);
-                    }
-                  },
+                  onPressed: !isLoading
+                      ? () async {
+                          setState(() {
+                            isLoading = true;
+                          });
+                          if (widget.onComplete != null) {
+                            await widget.onComplete!(images);
+                            setState(() {
+                              isLoading = false;
+                            });
+                          } else {
+                            setState(() {
+                              isLoading = true;
+                            });
+                            Navigator.pop(context, images);
+                          }
+                        }
+                      : () {},
                   backgroundColor: Theme.of(context).colorScheme.primary,
-                  child: Icon(
-                    Icons.check,
-                    color: Theme.of(context).colorScheme.onPrimary,
-                  ),
+                  child: isLoading
+                      ? const SizedBox.square(dimension: 20, child: CircularProgressIndicator())
+                      : Icon(
+                          Icons.check,
+                          color: Theme.of(context).colorScheme.onPrimary,
+                        ),
                 ),
               )
             ],
