@@ -364,7 +364,7 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
                             isLoading = true;
                           });
                           if (widget.onComplete != null) {
-                            isLoading ? null : await widget.onComplete!(images);
+                            await widget.onComplete!(images);
                             setState(() {
                               isLoading = false;
                             });
@@ -523,7 +523,7 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
                   setState(() {
                     isLoading = true;
                   });
-                  isLoading ? null : await widget.onComplete!(image);
+                  await widget.onComplete!(image);
                   setState(() {
                     isLoading = false;
                   });
