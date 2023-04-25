@@ -338,6 +338,7 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
                                           // print('removing');
                                           if (images.length == 1){
                                             images.clear();
+
                                             Navigator.maybePop(context);
                                             return;
                                           }
