@@ -180,7 +180,7 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
             actions: [
               BackButton(onPressed: (widget.onCancel != null) ? () => widget.onCancel!() : () {}),
               const Spacer(),
-              if (images.length < widget.maxLength && widget.allowGallery)
+              if (images.length < widget.maxLength && widget.allowGallery && (!kIsWeb && !Platform.isWindows))
                 IconButton(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   icon: const Icon(Icons.add_photo_alternate_outlined),
@@ -191,7 +191,7 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
                     });
                   },
                 ),
-              if (images.length < widget.maxLength && widget.allowCamera)
+              if (images.length < widget.maxLength && widget.allowCamera && (!kIsWeb && !Platform.isWindows))
                 IconButton(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   icon: const Icon(Icons.add_a_photo_outlined),
@@ -205,7 +205,7 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
                     });
                   },
                 ),
-              if (!kIsWeb)IconButton(
+              if (!kIsWeb && !Platform.isWindows) IconButton(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 icon: const Icon(Icons.crop),
                 onPressed: () async {
@@ -224,7 +224,7 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
                   }
                 },
               ),
-              IconButton(
+              if (!kIsWeb && !Platform.isWindows) IconButton(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 icon: const Icon(Icons.photo_filter_outlined),
                 onPressed: () async {
@@ -243,7 +243,7 @@ class _MultiImageEditorState extends State<MultiImageEditor> {
                   }
                 },
               ),
-              IconButton(
+              if (!kIsWeb && !Platform.isWindows) IconButton(
                 padding: const EdgeInsets.symmetric(horizontal: 8),
                 icon: const Icon(Icons.edit_outlined),
                 onPressed: () async {
@@ -494,7 +494,7 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
           setState(() {});
         },
       ),
-      if (widget.allowGallery)
+      if (widget.allowGallery && (!kIsWeb && !Platform.isWindows))
         IconButton(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           icon: const Icon(Icons.photo),
@@ -506,7 +506,7 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
             loadImage(image);
           },
         ),
-      if (widget.allowCamera)
+      if (widget.allowCamera &&  (!kIsWeb && !Platform.isWindows))
         IconButton(
           padding: const EdgeInsets.symmetric(horizontal: 8),
           icon: const Icon(Icons.camera_alt),
@@ -742,7 +742,7 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
                   scrollDirection: Axis.horizontal,
                   shrinkWrap: true,
                   children: <Widget>[
-                    if (!kIsWeb)BottomButton(
+                    if (!kIsWeb && !Platform.isWindows) BottomButton(
                       icon: Icons.crop,
                       text: 'Crop',
                       onTap: () async {
