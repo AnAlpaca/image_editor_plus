@@ -733,6 +733,7 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
+              width: MediaQuery.of(context).size.width,
               alignment: Alignment.bottomCenter,
               height: 86 + MediaQuery.of(context).padding.bottom,
               padding: const EdgeInsets.symmetric(vertical: 16),
