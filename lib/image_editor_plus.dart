@@ -461,6 +461,7 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
     super.dispose();
   }
 
+
   List<Widget> get filterActions {
     return [
       BackButton(
@@ -528,16 +529,18 @@ class _SingleImageEditorState extends State<SingleImageEditor> {
         onPressed: isLoading
             ? () {}
             : () async {
-                print('widthRatio: $widthRatio, heightRatio: $heightRatio, pixelRatio: $pixelRatio');
+
                 resetTransformation();
                 var binaryIntList = await screenshotController.capture(
                   pixelRatio: pixelRatio,
                 );
                 if (widget.onComplete != null) {
                   ImageItem image = ImageItem(binaryIntList);
+                  await image.status;
                   setState(() {
                     isLoading = true;
                   });
+                  print('widthRatio: ${image.width}, heightRatio: ${image.height}');
                   await widget.onComplete!(image);
                   setState(() {
                     isLoading = false;

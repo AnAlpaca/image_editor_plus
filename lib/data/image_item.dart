@@ -24,6 +24,7 @@ class ImageItem {
     dynamic decodedImage;
 
     if (imageFile is ImageItem) {
+      print('imageFile.height: ${imageFile.height}, imageFile.width: ${imageFile.width}');
       height = imageFile.height;
       width = imageFile.width;
 
@@ -34,9 +35,11 @@ class ImageItem {
     } else if (imageFile is File || imageFile is XFile) {
       image = await imageFile.readAsBytes();
       decodedImage = await decodeImageFromList(image);
+      print('decodedImage.height: ${decodedImage.height}, imageFile.width: ${decodedImage.width}');
     } else {
       image = imageFile;
       decodedImage = await decodeImageFromList(imageFile);
+      print('decodedImage.height: ${decodedImage.height}, imageFile.width: ${decodedImage.width}');
     }
 
     // image was decoded
